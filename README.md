@@ -2,11 +2,9 @@
 
 This project focuses on penetration testing in cryptographic systems, leveraging tools like:
 
-**Pwntools** – for automating input sending and output retrieval.
-**cURL** – for extracting data from databases.
-**Mathematical operations** – such as XOR bitwise manipulation on Many-time Pad AES.
-
----
+**Pwntools** – for automating input sending and output retrieval.  
+**cURL** – for extracting data from databases.  
+**Mathematical operations** – such as XOR bitwise manipulation on Many-time Pad AES.  
 
 ## Objectives
 
