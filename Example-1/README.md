@@ -1,4 +1,4 @@
-# AES-CBC-POA-Encrypt [pwn.college CSE365 Cryptography Course](https://pwn.college/cse365-f2024/cryptography/)
+# AES-CBC-POA-Encrypt [pwn.college](https://pwn.college/cse365-f2024/cryptography/)
 ## Challenge Overview
 
 You're not going to believe this, but... a Padding Oracle Attack doesn't just let you decrypt arbitrary messages: it lets you encrypt arbitrary data as well! This sounds too wild to be true, but it is. Think about it: you demonstrated the ability to modify bytes in a block by messing with the previous block's ciphertext. Unfortunately, this will make the previous block decrypt to garbage. But is that so bad? You can use a padding oracle attack to recover the exact values of this garbage, and mess with the block before that to fix this garbage plaintext to be valid data! Keep going, and you can craft fully controlled, arbitrarily long messages, all without knowing the key! When you get to the IV, just treat it as a ciphertext block (e.g., plop a fake IV in front of it and decrypt it as usual) and keep going! Incredible.
