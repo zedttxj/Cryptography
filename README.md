@@ -1,3 +1,25 @@
-# Cryptography Pen-testing Project (pwn.college):
-I primarily conducting penetration tests using pwntools (automated input sender and output receiver), curl (retrieving data from database), mathematics calculation (XOR bitwise operator on Many-time Pad AES). The main purposes of the projects is to get used to common encryption and decryption algorithms, which are demonstrated in [pwn.college](https://pwn.college/cse365-f2024/cryptography/) and many ctf challenges from picoCTF, and apply it to real world scenario that combined with other web exploitation techniques (like SQL injection for example) on various cryptographic algorithms: XOR, Hex, Base64, One-time Pad, Many-time Pad AES (ECB, CBC, CPA, POA), DHKE (to AES), RSA, and SHA.
-Additionally, I learned how to perform TLS handshakes (using pwntools) with self-signed root certificates and private keys, deriving AES-128 keys from the exchanged secrets.
+# Cryptography Pen-Testing Project (pwn.college)
+
+This project focuses on penetration testing in cryptographic systems, leveraging tools like:
+
+**Pwntools** – for automating input sending and output retrieval.
+**cURL** – for extracting data from databases.
+**Mathematical operations** – such as XOR bitwise manipulation on Many-time Pad AES.
+
+## Objectives
+
+The main goal is to gain hands-on experience with common encryption and decryption algorithms, as demonstrated in pwn.college Cryptography Course and various CTF challenges (e.g., picoCTF). The project also explores real-world applications by integrating cryptographic attacks with web exploitation techniques (e.g., SQL injection).
+
+---
+
+### Cryptographic Algorithms Covered
+
+Encoding & Simple Ciphers: XOR, Hex, Base64
+Symmetric Encryption: One-time Pad, Many-time Pad AES (ECB, CBC, CPA, POA)
+Asymmetric Encryption: Diffie-Hellman Key Exchange (DHKE → AES), RSA
+Hashing & Integrity: SHA (various versions)
+
+### Additional Topics
+
+Performing TLS handshakes (using Pwntools) with self-signed root certificates and private keys.
+Deriving AES-128 keys from exchanged secrets in secure communications.
