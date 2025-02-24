@@ -10,8 +10,6 @@ This project focuses on penetration testing in cryptographic systems, leveraging
 
 The main goal is to gain hands-on experience with common encryption and decryption algorithms, as demonstrated in pwn.college Cryptography Course and various CTF challenges (e.g., picoCTF). The project also explores real-world applications by integrating cryptographic attacks with web exploitation techniques (e.g., SQL injection).
 
----
-
 ### Cryptographic Algorithms Covered
 
 Encoding & Simple Ciphers: XOR, Hex, Base64
