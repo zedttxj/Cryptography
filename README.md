@@ -14,12 +14,12 @@ The main goal is to gain hands-on experience with common encryption and decrypti
 
 ## Cryptographic Algorithms Covered
 
-Encoding & Simple Ciphers: XOR, Hex, Base64
-Symmetric Encryption: One-time Pad, Many-time Pad AES (ECB, CBC, CPA, POA)
-Asymmetric Encryption: Diffie-Hellman Key Exchange (DHKE → AES), RSA
-Hashing & Integrity: SHA (various versions)
+Encoding & Simple Ciphers: XOR, Hex, Base64  
+Symmetric Encryption: One-time Pad, Many-time Pad AES (ECB, CBC, CPA, POA)  
+Asymmetric Encryption: Diffie-Hellman Key Exchange (DHKE → AES), RSA  
+Hashing & Integrity: SHA (various versions)  
 
 ## Additional Topics
 
-Performing TLS handshakes (using Pwntools) with self-signed root certificates and private keys.
+Performing TLS handshakes (using Pwntools) with self-signed root certificates and private keys.  
 Deriving AES-128 keys from exchanged secrets in secure communications.
