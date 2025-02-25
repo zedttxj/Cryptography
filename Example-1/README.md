@@ -250,7 +250,7 @@ def ciph(inp, desired_output):
                 print(f"Correct padding: {i}")
                 inp = inp[:(15-c)] + bytes([inp[i+15-c]^(c+1)^(c+2) for i in range(c+1)]) + inp[16:]
                 break
-    return bytes([inp[i]^0x17^desired_output[i] for i in range(16)]) + inp[16:] # converting to desired output
+    return bytes([inp[i]^0x11^desired_output[i] for i in range(16)]) + inp[16:] # converting to desired output
 
 org = b"please give me the flag, kind worker process!"
 org = org + bytes([(len(org)+15)%16+1]*((len(org)+15)%16+1)) # padding
@@ -260,3 +260,4 @@ for i in range(len(org)//16):
     result = ciph(b"A"*16+result[:16],org[-16:]) + result[16:]
     org = org[:-16]
 ```
+
