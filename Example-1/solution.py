@@ -19,7 +19,7 @@ def decoy(inp, rea, flag=False):
                 p.recvline()
         return out
 
-decoy(b"A"*32,9) # this step is for cleaning the output
+decoy(b"A"*32,9) # this step is for cleaning the output. Can skip this step if you run the file directly on the server (set `p = process(b"/bin/bash")`)
 
 def ciph(inp, desired_output):
     for c in range(16):
