@@ -35,7 +35,11 @@ The `worker.py` can tell us when our cipher text has correct padding or not. For
 
 Assume that when we change the last character of the first block into 'A' (`0x41`), we got the message `Unknown command!`. In this case, the decrypted message has the padding of `0x1`. In the next last character, we would have to change the last character in the encrypted form in a way that its original decrypted message would have the padding `0x2` in its last character. By performing XOR operation, we have `0x41^0x1^0x2`=`0x42` as the value of the last character.
 
-### Changing the last character of the 1st block
+*We assume that you know how XOR operation works. If you don't, don't worry! Like addition, subtraction, and multiplication, XOR is an operator that can be used in the integer field. There's more to it. If you perform XOR operation twice with the same value, it returns to the original value. For example, `0x49`^`0x2`^`0x2` (where "^" is the XOR operator) returns to `0x49`. `0x49`^`0x2`^`0x2`^`0x2`^`0x2` is also equal to `0x49`.*
+
+With that said, let's dive in!
+
+### 1. Changing the last character of the 1st block in encrypted format
 
 Let's run this code:
 ```
@@ -63,7 +67,7 @@ for i in range(256): # changing the last character of the IV block 256 times
     print(i, decoy(inp,5))
 ```
 
-You may adjust the 2nd parameter of the `decoy` function depends on how its output match what you would expect. Here, I changed it into `9` for the cleaning step and then `5` when I loop through 256 possible characters.
+You may adjust the 2nd parameter of the `decoy` function depends on how its output match what you would expect. Here, I changed it into `9` for the cleaning step and then `5` when I loop through 256 possible characters. After that, I ran the program:
 
 ```
 242 b'cent call last):\n'
@@ -83,3 +87,159 @@ You may adjust the 2nd parameter of the `decoy` function depends on how its outp
 [*] Closed SSH channel with pwn.college
 ```
 
+Notice that character with the value `249` (`0xf9`) gives the correct padding, which will make the value of the last character of the 2nd block `0x1` in original message. In other word, if our input is `b"A"*32` (32 characters A), or original message would be `b"A"*16+b"?"*15+bytes([0x1])` in this case (assume that "?" is an unknown character).
+
+### 2. Changing the 2nd character of the first block in encrypted format
+
+Let's try figuring the correct padding for the second character. We would have to change the last character into `0xf9^0x1^0x2` as well. Before that, let's check how the terminal handle out if it receives correct padding. In my case, the correct padding input is `b"AAAAAAAAAAAAAAAxAAAAAAAAAAAAAAAA"`. Let's convert this into base64:
+```
+$ python3
+Python 3.10.12 (main, Jan 17 2025, 14:35:34) [GCC 11.4.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import base64
+>>> print(base64.b64encode(b"AAAAAAAAAAAAAAAxAAAAAAAAAAAAAAAA"))
+b'QUFBQUFBQUFBQUFBQUFBeEFBQUFBQUFBQUFBQUFBQUE='
+>>>
+$ ssh hacker@pwn.college
+Connected!
+hacker@cryptography~aes-cbc-poa-encrypt:~$ /challenge/worker
+TASK: QUFBQUFBQUFBQUFBQUFBeEFBQUFBQUFBQUFBQUFBQUE=
+Unknown command!
+TASK: QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE=
+Traceback (most recent call last):
+  File "/challenge/worker", line 20, in <module>
+    plaintext = unpad(cipher.decrypt(ciphertext), cipher.block_size).decode('latin1')
+  File "/usr/local/lib/python3.8/dist-packages/Crypto/Util/Padding.py", line 92, in unpad
+    raise ValueError("Padding is incorrect.")
+ValueError: Padding is incorrect.
+hacker@cryptography~aes-cbc-poa-encrypt:~$
+```
+
+I put 2 different inputs: the first one has the correct padding and the second one has incorrect padding. It seems our output still produces the same number of lines. So that's one extra line of output. I wrote the code to check if we can find the correct value for the next last character:
+```
+from pwn import *
+import base64
+
+r = ssh('hacker', 'pwn.college', keyfile="./key")
+p = r.run(b"/bin/bash")
+
+def decoy(inp, rea):
+        inp = base64.b64encode(inp)
+        p.sendline("/challenge/worker")
+        p.sendline(b"TASK: " + inp)
+        out = p.recvline()[-17:]
+        if out != b"Unknown command!\n":
+            for i in range(rea):
+                #print(i, p.recvline())
+                p.recvline()
+        else:
+            p.sendline(b"TASK: QUFBQUFBQUFBQUFBQUFBQQ==") # send incorrect padding to close the program
+            for i in range(rea+1):
+                p.recvline()
+        return out
+
+decoy(b"A"*32,9) # this step is for cleaning the output
+inp = b"A"*32 # Our input
+for i in range(256): # changing the last character of the IV block 256 times
+    inp = inp[:15] + bytes([i]) + inp[16:]
+    if decoy(inp,5) == b"Unknown command!\n":
+        print(f"Correct padding: {i}")
+        break
+
+inp = inp[:15] + bytes([inp[15]^0x1^0x2]) + inp[16:]
+
+for i in range(256):
+    inp = inp[:14] + bytes([i]) + inp[15:]
+    if decoy(inp,5) == b"Unknown command!\n":
+        print(f"Correct padding: {i}")
+        break
+```
+
+Then, I ran it:
+```
+Correct padding: 120
+Correct padding: 242
+[*] Closed SSH channel with pwn.college
+```
+
+Perfect! In the next step, we will run through each character and complete the whole block of 16 characters. You can write something like this or better:
+```
+from pwn import *
+import base64
+
+r = ssh('hacker', 'pwn.college', keyfile="./key")
+p = r.run(b"/bin/bash")
+
+def decoy(inp, rea):
+        inp = base64.b64encode(inp)
+        p.sendline("/challenge/worker")
+        p.sendline(b"TASK: " + inp)
+        out = p.recvline()[-17:]
+        if out != b"Unknown command!\n":
+            for i in range(rea):
+                #print(i, p.recvline())
+                p.recvline()
+        else:
+            p.sendline(b"TASK: QUFBQUFBQUFBQUFBQUFBQQ==") # send incorrect padding to close the program
+            for i in range(rea+1):
+                p.recvline()
+        return out
+
+decoy(b"A"*32,9) # this step is for cleaning the output
+inp = b"A"*32 # Our input
+for c in range(16):
+    print(c) # Check if we missing any characters
+    for i in range(256): # changing the last character of the IV block 256 times
+        inp = inp[:(15-c)] + bytes([i]) + inp[(16-c):]
+        if decoy(inp,5) == b"Unknown command!\n":
+            print(f"Correct padding: {i}")
+            inp = inp[:(15-c)] + bytes([inp[i+15-c]^(c+1)^(c+2) for i in range(c+1)]) + inp[16:]
+            break
+```
+
+And, it worked:
+
+```
+0
+Correct padding: 120
+1
+Correct padding: 242
+2
+Correct padding: 100
+3
+Correct padding: 87
+4
+Correct padding: 42
+5
+Correct padding: 225
+6
+Correct padding: 165
+7
+Correct padding: 255
+8
+Correct padding: 188
+9
+Correct padding: 181
+10
+Correct padding: 88
+11
+Correct padding: 69
+12
+Correct padding: 146
+13
+Correct padding: 217
+14
+Correct padding: 199
+15
+Correct padding: 71
+[*] Closed SSH channel with pwn.college
+```
+
+Additionally, we put into a function that changes 2 blocks of text (which includes 32 characters) according to how we want our original message be with 2 parameters input and desired output.
+
+### 3. Finalize the idea
+
+I mentioned above that we can put everything into a function to return the encrypted format of the desired output we want. Notice that to change the original message of the 2nd block, we just change the first block in encrypted format. Consequently, we have to start the process from the right most block to the left most block:
+```
+
+```
