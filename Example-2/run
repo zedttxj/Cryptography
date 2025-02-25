@@ -67,7 +67,7 @@ def input_hex(name):
         print(f"Failed to decode hex input: {data!r}", file=sys.stderr)
         exit(1)
 
-if __main__:
+def main():
     """
     In this challenge you will perform a simplified Transport Layer Security (TLS) handshake, acting as the server.
     You will be provided with Diffie-Hellman parameters, a self-signed root certificate, and the root private key.
@@ -211,3 +211,6 @@ if __main__:
 
     ciphertext = cipher_encrypt.encrypt(pad(flag, cipher_encrypt.block_size))
     show_b64("secret ciphertext", ciphertext)
+
+if __name__=="__main__":
+    main()
