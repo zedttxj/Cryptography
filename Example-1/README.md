@@ -239,7 +239,7 @@ Additionally, we put into a function that changes 2 blocks of text (which includ
 
 ### 3. Finalize the idea
 
-I mentioned above that we can put everything into a function to return the encrypted format of the desired output we want. Notice that to change the original message of the 2nd block, we just change the first block in encrypted format. Consequently, we have to start the process from the right most block to the left most block:
+I mentioned above that we can put everything into a function to return the encrypted format of the desired output we want. Notice that to change the original message of the 2nd block, we just change the first block in encrypted format. Consequently, we have to start the process from the right most block to the left most block and everytime we run that function, we just have to add extra 16 random characters at the head of the `inp` and it still works:
 ```
 
 ```
