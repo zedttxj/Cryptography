@@ -1,3 +1,73 @@
+#!/opt/pwn.college/python
+
+import sys
+import string
+import random
+import pathlib
+import base64
+import json
+import textwrap
+
+from Crypto.Cipher import AES
+from Crypto.Hash.SHA256 import SHA256Hash
+from Crypto.PublicKey import RSA
+from Crypto.Random import get_random_bytes
+from Crypto.Random.random import getrandbits, randrange
+from Crypto.Util.strxor import strxor
+from Crypto.Util.Padding import pad, unpad
+
+
+flag = open("/flag", "rb").read()
+config = (pathlib.Path(__file__).parent / ".config").read_text()
+level = int(config)
+
+
+def show(name, value, *, b64=True):
+    print(f"{name}: {value}")
+
+
+def show_b64(name, value):
+    show(f"{name} (b64)", base64.b64encode(value).decode())
+
+def show_hex_block(name, value, byte_block_size=16):
+    value_to_show = ""
+
+    for i in range(0, len(value), byte_block_size):
+        value_to_show += f"{value[i:i+byte_block_size].hex()}"
+        value_to_show += " "
+    show(f"{name} (hex)", value_to_show)
+
+
+def show_hex(name, value):
+    show(name, hex(value))
+
+
+def input_(name):
+    try:
+        return input(f"{name}: ")
+    except (KeyboardInterrupt, EOFError):
+        print()
+        exit(0)
+
+
+def input_b64(name):
+    data = input_(f"{name} (b64)")
+    try:
+        return base64.b64decode(data)
+    except base64.binascii.Error:
+        print(f"Failed to decode base64 input: {data!r}", file=sys.stderr)
+        exit(1)
+
+
+def input_hex(name):
+    data = input_(name)
+    try:
+        return int(data, 16)
+    except Exception:
+        print(f"Failed to decode hex input: {data!r}", file=sys.stderr)
+        exit(1)
+
+if __main__:
     """
     In this challenge you will perform a simplified Transport Layer Security (TLS) handshake, acting as the server.
     You will be provided with Diffie-Hellman parameters, a self-signed root certificate, and the root private key.
