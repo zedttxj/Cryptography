@@ -239,7 +239,24 @@ Additionally, we put into a function that changes 2 blocks of text (which includ
 
 ### 3. Finalize the idea
 
-I mentioned above that we can put everything into a function to return the encrypted format of the desired output we want. Notice that to change the original message of the 2nd block, we just change the first block in encrypted format. Consequently, we have to start the process from the right most block to the left most block and everytime we run that function, we just have to add extra 16 random characters at the head of the `inp` and it still works:
+I mentioned above that we can put everything into a function to return the encrypted format of the desired output we want. Notice that to change the original message of the 2nd block, we just change the first block in encrypted format. Consequently, we have to start the process from the right most block to the left most block and everytime we run that function, we just have to add extra 16 random characters to the first 16 characters of the `inp` and repeat the process:
 ```
+def ciph(inp, desired_output):
+    for c in range(16):
+        print(c)
+        for i in range(256): # changing the last character of the IV block 256 times
+            inp = inp[:(15-c)] + bytes([i]) + inp[(16-c):]
+            if decoy(inp,5) == b"Unknown command!\n":
+                print(f"Correct padding: {i}")
+                inp = inp[:(15-c)] + bytes([inp[i+15-c]^(c+1)^(c+2) for i in range(c+1)]) + inp[16:]
+                break
+    return bytes([inp[i]^0x17^desired_output[i] for i in range(16)]) + inp[16:] # converting to desired output
 
+org = b"please give me the flag, kind worker process!"
+org = org + bytes([(len(org)+15)%16+1]*((len(org)+15)%16+1)) # padding
+print(org)
+result = b"A"*16
+for i in range(len(org)//16):
+    result = ciph(b"A"*16+result[:16],org[-16:]) + result[16:]
+    org = org[:-16]
 ```
