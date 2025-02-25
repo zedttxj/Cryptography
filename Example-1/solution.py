@@ -37,7 +37,7 @@ org = org + bytes([(len(org)+15)%16+1]*((len(org)+15)%16+1)) # padding
 print(org)
 result = b"A"*16
 for i in range(len(org)//16):
-    result = ciph(b"A"*16+result,org[-16:])
+    result = ciph(b"A"*16+result[:16],org[-16:]) + result[16:]
     org = org[:-16]
 
-# The program will automatically print the flag without having to call `decoy` again
+decoy(result, 3) # Print flag
