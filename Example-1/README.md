@@ -261,3 +261,17 @@ for i in range(len(org)//16):
     org = org[:-16]
 ```
 
+Finally, I ran `solution.py`:
+```
+Correct padding: 56
+12
+Correct padding: 84
+13
+Correct padding: 70
+14
+Correct padding: 201
+15
+Correct padding: 162
+0 b'pwn.college{MRB2rB86if8K0bGJ13u_cPdmSho.dFDN3kDL5kTN5YzW}\n'
+1 b'\n'
+```
