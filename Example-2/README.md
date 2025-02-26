@@ -1,5 +1,3 @@
-**INCOMPLETE-WILL BE FINISHED IN A DAY**
-
 # TLS 2 [pwn.college](https://pwn.college/cse365-f2024/cryptography/)
 
 ## Challenge Overview
