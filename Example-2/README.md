@@ -119,4 +119,181 @@ In our case, `s` is equal to `(B ** a) mod p` since we only get `A` from the inp
 Using both hash digest and AES_CBC symmetric encryption method is very secure. The attacker only has 50% for the `2 ** 128`-th try to guess the right key by generating hash collision or 100%  and would takes, generally, `len(content)*256` tries to send the malicious `content` to the victim. The measure can be prevented by setting expiration date for the key or automatically revoke the old key and exchange the new key after a period of time.
 That seems secure! However, Eve can stand in the middle and establish connections with both Alice and Bob similar to the way Alice and Bob exchange the key. How do we figure out that the other end is trust-worthy enough to exchange communications? The solution is authentication with certificates and PKI (Public Key Infrastructure). The process would require the user to have valid certificate that is trusted by the `root`. Before the DHKE process, the root send the user one of its asymmetric key in private! Afther the DHKE process, root's certificate containing the other asymmetric key information will be sent. Assume that we use RSA, if the trusted user knows the key `d` (which is exchanged in private), the key `e` and `n` (which are the public keys) are digitally signed using RSA (or another asymmetric algorithm) to ensure its authenticity from the root. This way, Eve can't also exchange communications with Alice or Bob since they can verify the root's certificate signature. The value of the RSA's keys must also be big enough so that they are not breakable.
 
-### 3. Continue the process
+Let's continue the process:
+```
+#def decrypt_input_b64(name):
+    #    data = input_b64(name)
+    #    try:
+    #        return unpad(cipher_decrypt.decrypt(data), cipher_decrypt.block_size)
+    #    except ValueError as e:
+    #        print(f"{name}: {e}", file=sys.stderr)
+    #        exit(1)
+
+    #user_certificate_data = decrypt_input_b64("user certificate")
+    #user_certificate_signature = decrypt_input_b64("user certificate signature")
+    #user_signature = decrypt_input_b64("user signature")
+
+    def decoy(inp):
+        r.sendline(base64.b64encode(cipher_encrypt.encrypt(pad(inp, cipher_encrypt.block_size)))
+
+    user_certificate_data = {
+        "name":name.decode(), # convert bytestring into string
+        "key": {
+            "e":65537,
+            "n":12345
+        },
+        "signer":"root"
+    }
+    decoy(user_certificate_data)
+    user_certificate_signature = b"test"
+    decoy(user_certificate_signature)
+    user_signature = b"test"
+    decoy(user_signature)
+```
+
+Here, I create the sending function `decoy` according to the function `decrypt_input_b64` from the server. I also choose random variables depends on what I have. In this case, I only know that my signer is "root" since I received the `root`'s key, which is key `d`. Let's run the program (don't forget to put `exit()` to avoid unnecessary error logs):
+```
+ python3 solution.py
+[+] Starting local process '/challenge/run': pid 169
+/home/hacker/solution.py:152: BytesWarning: Text is not bytes; assuming ASCII, no guarantees. See https://docs.pwntools.com/#bytes
+  r.sendline(hex(B))
+[*] Stopped process '/challenge/run' (pid 169)
+hacker@cryptography~tls-2:~$
+```
+The program exits normally. Let's check what's the server sent us (I used `print(r.recvall())` in this case):
+```
+b'B: user certificate (b64): user certificate signature (b64): user signature (b64): Invalid user certificate key n value (2**512 < n < 2**1024)\n'
+```
+
+So, we haven't met the requirements. We have to generate different RSA keys. By using `getPrime(512)` (which generates a random prime value that's around 512 bits), we generate both `p` and `q` to contruct our own key (part of my `main` function):
+```
+    from Crypto.Util.number import getPrime, inverse
+    p = 0
+    q = 0
+    n = 0
+    while True:
+        p = getPrime(512)
+        q = getPrime(512)
+        n = p*q
+        if 2**512 < n < 2**1024:
+            break
+    phi = (p-1)*(q-1)
+    user_key_e = 65537
+    user_key_d = inverse(user_key_e, phi) # The same as using pow(user_key_e, -1, phi)
+    user_certificate_data = {
+        "name":name.decode(), # convert bytestring into string
+        "key": {
+            "e":user_key_e,
+            "n":n
+        },
+        "signer":"root"
+    }
+    decoy(json.dumps(user_certificate_data).encode())
+    user_certificate_signature = b"test"
+    decoy(user_certificate_signature)
+    user_signature = b"test"
+    decoy(user_signature)
+    print(r.recvall())
+    exit()
+```
+
+This time, we received different output:
+```
+b'B: user certificate (b64): user certificate signature (b64): user signature (b64): Untrusted user certificate: invalid signature\n'
+```
+
+Let's find out the way the construct according to this section of code:
+```
+    #user_signer = user_certificate.get("signer")
+    #if user_signer not in root_trusted_certificates:
+    #    print(f"Untrusted user certificate signer: `{user_signer}`", file=sys.stderr)
+    #    exit(1)
+    #user_signer_key = root_trusted_certificates[user_signer]["key"]
+    #user_certificate_hash = SHA256Hash(user_certificate_data).digest()
+    #user_certificate_check = pow(
+    #    int.from_bytes(user_certificate_signature, "little"),
+    #    user_signer_key["e"],
+    #    user_signer_key["n"]
+    #).to_bytes(256, "little")[:len(user_certificate_hash)]
+
+    #if user_certificate_check != user_certificate_hash:
+    #    print("Untrusted user certificate: invalid signature", file=sys.stderr)
+    #    exit(1)
+```
+
+Our `user_signer` is "root". Consequently, `user_signer_key` will contains the `root`'s key and these keys will be used to decrypted the `user_certificate_signature`. We would have to encrypt our "signature" (which is our hash digest of the `user_certificate_data`) with the root's key `d`:
+```
+    user_certificate_signature = SHA256Hash(json.dumps(user_certificate_data).encode()).digest()
+    user_certificate_signature = pow(
+        int.from_bytes(user_certificate_signature, "little"),
+        root_key_d,
+        root_certificate_data["key"]["n"]
+    ).to_bytes(256, "little")
+    decoy(user_certificate_signature)
+```
+
+And, I got a new output:
+```
+b'B: user certificate (b64): user certificate signature (b64): user signature (b64): Untrusted user: invalid signature\n'
+```
+
+Let's check the end section of the code:
+```
+    #user_signature_data = (
+    #    name.encode().ljust(256, b"\0") +
+    #    A.to_bytes(256, "little") +
+    #    B.to_bytes(256, "little")
+    #)
+    #user_signature_hash = SHA256Hash(user_signature_data).digest()
+    #user_signature_check = pow(
+    #    int.from_bytes(user_signature, "little"),
+    #    user_key["e"],
+    #    user_key["n"]
+    #).to_bytes(256, "little")[:len(user_signature_hash)]
+
+    #if user_signature_check != user_signature_hash:
+    #    print("Untrusted user: invalid signature", file=sys.stderr)
+    #    exit(1)
+
+    #ciphertext = cipher_encrypt.encrypt(pad(flag, cipher_encrypt.block_size))
+    #show_b64("secret ciphertext", ciphertext)
+```
+
+Similar to what we did above, we would have to encrypt, again, our "DHK signature" but with our RSA keys. This "DHK signature" is not a hash digest of `s` but a hash digest of both `A` and `B` instead.  
+Why wouldn't we wanna use hash digest of `s`? Because we don't wanna reveal `s`, which should be in private. Instead, `A` and `B` are both public and can be used to sign. This protocol ensures that both parties agree on the asymmetric public keys they are using. The attacker won't be able to sign on our behalf without the value `s` and our RSA asymmetric key. Only our intended recipient (which is the root) can decrypt and verify the signature. You can adjust the `user_signature` as below:
+```
+    user_signature = (
+        name.ljust(256, b"\0") +
+        A.to_bytes(256, "little") +
+        B.to_bytes(256, "little")
+    )
+    user_signature = SHA256Hash(user_signature).digest()
+    user_signature = pow(
+        int.from_bytes(user_signature, "little"),
+        user_key_d,
+        n
+    ).to_bytes(256, "little")
+    decoy(user_signature)
+    print(r.recvall())
+    exit()
+```
+
+And, I got a different output:
+```
+b'B: user certificate (b64): user certificate signature (b64): user signature (b64): secret ciphertext (b64): 8yRkMxRr9Uwlm+J5mDxTnu0L3X9NiuWObBLl2WLHsBgW9Al2YksFkIPaSAWYCzr0pN7LAviyUDE5xqbwUaS4mA==\n'
+```
+
+Let's decrypt this with `cipher_decrypt`:
+```
+    r.recvuntil(b"secret ciphertext (b64): ")
+    cipher_text = r.recvline()[:-1]
+    print(unpad(cipher_decrypt.decrypt(base64.b64decode(cipher_text)), cipher_decrypt.block_size))
+    exit()
+```
+
+And I got the output I wanted:
+```
+b'pwn.college{8-aCC_rKxTelwoMlnbQJlxe6BUW.dZDOzMDL5kTN5YzW}\n'
+```
+
+One thing to notice: if the key value `s` get leaked, it can compromise the current communications. However, it won't affect the past communications. Luckily, the key value `s` is unique to each session. This only impacts the future communication where the same `s` is used.
