@@ -17,8 +17,6 @@ from Crypto.Util.strxor import strxor
 from Crypto.Util.Padding import pad, unpad
 
 
-flag = open("/flag", "rb").read()
-config = (pathlib.Path(__file__).parent / ".config").read_text()
 
 
 def show(name, value, *, b64=True):
