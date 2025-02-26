@@ -16,10 +16,68 @@ from Crypto.Random import get_random_bytes
 from Crypto.Random.random import getrandbits, randrange
 from Crypto.Util.strxor import strxor
 from Crypto.Util.Padding import pad, unpad
-from Crypto.Util.number import getPrime, inverse
 
+
+
+
+def show(name, value, *, b64=True):
+    print(f"{name}: {value}")
+
+
+def show_b64(name, value):
+    show(f"{name} (b64)", base64.b64encode(value).decode())
+
+def show_hex_block(name, value, byte_block_size=16):
+    value_to_show = ""
+
+    for i in range(0, len(value), byte_block_size):
+        value_to_show += f"{value[i:i+byte_block_size].hex()}"
+        value_to_show += " "
+    show(f"{name} (hex)", value_to_show)
+
+
+def show_hex(name, value):
+    show(name, hex(value))
+
+
+def input_(name):
+    try:
+        return input(f"{name}: ")
+    except (KeyboardInterrupt, EOFError):
+        print()
+        exit(0)
+
+
+def input_b64(name):
+    data = input_(f"{name} (b64)")
+    try:
+        return base64.b64decode(data)
+    except base64.binascii.Error:
+        print(f"Failed to decode base64 input: {data!r}", file=sys.stderr)
+        exit(1)
+
+
+def input_hex(name):
+    data = input_(name)
+    try:
+        return int(data, 16)
+    except Exception:
+        print(f"Failed to decode hex input: {data!r}", file=sys.stderr)
+        exit(1)
 
 def main():
+    """
+    In this challenge you will perform a simplified Transport Layer Security (TLS) handshake, acting as the server.
+    You will be provided with Diffie-Hellman parameters, a self-signed root certificate, and the root private key.
+    The client will request to establish a secure channel with a particular name, and initiate a Diffie-Hellman key exchange.
+    The server must complete the key exchange, and derive an AES-128 key from the exchanged secret.
+    Then, using the encrypted channel, the server must supply the requested user certificate, signed by root.
+    Finally, using the encrypted channel, the server must sign the handshake to prove ownership of the private user key.
+    """
+
+    r = process("/challenge/run")
+
+    # 2048-bit MODP Group from RFC3526
     p = int.from_bytes(bytes.fromhex(
         "FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1 "
         "29024E08 8A67CC74 020BBEA6 3B139B22 514A0879 8E3404DD "
@@ -38,13 +96,12 @@ def main():
     #show_hex("p", p)
     #show_hex("g", g)
 
-    #root_key = RSA.generate(2048)
+    root_key = RSA.generate(2048)
 
-    r = process("/challenge/run")
-    r.recvuntil("root key d: ")
-
-    # show_hex("root key d", root_key.d)
-    d = int(r.recvline()[:-1], 16)
+    #show_hex("root key d", root_key.d)
+    r.recvuntil(b"root key d: ")
+    root_key_d = r.recvline()[:-1] # Cut of the last character, which is "\n"
+    root_key_d = int(root_key_d, 16) # Convert hex string into in
 
     #root_certificate = {
     #    "name": "root",
@@ -53,7 +110,7 @@ def main():
     #        "n": root_key.n,
     #    },
     #    "signer": "root",
-    #    }
+    #}
 
     #root_trusted_certificates = {
     #    "root": root_certificate,
@@ -68,23 +125,23 @@ def main():
     #).to_bytes(256, "little")
 
     #show_b64("root certificate", root_certificate_data)
-    r.recvuntil("root certificate (b64): ")
-    data_cer = json.loads(base64.b64decode(r.recvline()[:-1]))
-
+    r.recvuntil(b"root certificate (b64): ")
+    root_certificate_data = json.loads(base64.b64decode(r.recvline()[:-1]))
     #show_b64("root certificate signature", root_certificate_signature)
-    r.recvuntil("root certificate signature (b64): ")
-    sign = base64.b64decode(r.recvline()[:-1])
+    r.recvuntil(b"root certificate signature (b64): ")
+    root_certificate_signature = base64.b64decode(r.recvline()[:-1])
 
     #name = ''.join(random.choices(string.ascii_lowercase, k=16))
     #show("name", name)
-    r.recvuntil("name: ")
-    name = (r.recvline()[:-1]).decode()
+    r.recvuntil(b"name: ")
+    name = r.recvline()[:-1]
 
     #a = getrandbits(2048)
     #A = pow(g, a, p)
     #show_hex("A", A)
-    r.recvuntil("A: ")
-    A = int(r.recvline()[:-1], 16)
+    r.recvuntil(b"A: ")
+    A = r.recvline()[:-1]
+    A = int(A, 16)
 
     #B = input_hex("B")
     #if not (B > 2**1024):
@@ -107,40 +164,60 @@ def main():
     #        print(f"{name}: {e}", file=sys.stderr)
     #        exit(1)
 
-    def decoy(inp):
-        inp = cipher_encrypt.encrypt(pad(inp, cipher_encrypt.block_size))
-        inp = base64.b64encode(inp)
-        r.sendline(inp)
-
     #user_certificate_data = decrypt_input_b64("user certificate")
-    user_cer_data = data_cer
-    user_cer_data["name"] = name
+    #user_certificate_signature = decrypt_input_b64("user certificate signature")
+    #user_signature = decrypt_input_b64("user signature")
 
+    def decoy(inp):
+        r.sendline(base64.b64encode(cipher_encrypt.encrypt(pad(inp, cipher_encrypt.block_size))))
+
+    from Crypto.Util.number import getPrime, inverse
     p = 0
     q = 0
-    nn = 0
+    n = 0
     while True:
-        p = getPrime(500)
-        q = getPrime(500)
-        nn = p*q
-        if 2**512 < nn < 2**1024:
+        p = getPrime(512)
+        q = getPrime(512)
+        n = p*q
+        if 2**512 < n < 2**1024:
             break
     phi = (p-1)*(q-1)
-    dd = inverse(65537, phi)
-    n = user_cer_data["key"]["n"]
-    user_cer_data["key"]["e"] = 65537
-    user_cer_data["key"]["n"] = nn
-    user_cer_data = json.dumps(user_cer_data).encode()
-    decoy(user_cer_data)
-    #user_certificate_signature = decrypt_input_b64("user certificate signature")
-    user_cer_signa = SHA256Hash(user_cer_data).digest()
-    user_cer_signa = pow(
-        int.from_bytes(user_cer_signa, "little"),
-        d,
-        n,
+    user_key_e = 65537
+    #user_key_d = pow(user_key_e, -1, phi)
+    user_key_d = inverse(user_key_e, phi)
+    user_certificate_data = {
+        "name":name.decode(), # convert bytestring into string
+        "key": {
+            "e":user_key_e,
+            "n":n
+        },
+        "signer":"root"
+    }
+    decoy(json.dumps(user_certificate_data).encode())
+    user_certificate_signature = SHA256Hash(json.dumps(user_certificate_data).encode()).digest()
+    user_certificate_signature = pow(
+        int.from_bytes(user_certificate_signature, "little"),
+        root_key_d,
+        root_certificate_data["key"]["n"]
     ).to_bytes(256, "little")
-    decoy(user_cer_signa)
-    #user_signature = decrypt_input_b64("user signature")
+    decoy(user_certificate_signature)
+    user_signature = (
+        name.ljust(256, b"\0") +
+        A.to_bytes(256, "little") +
+        B.to_bytes(256, "little")
+    )
+    user_signature = SHA256Hash(user_signature).digest()
+    user_signature = pow(
+        int.from_bytes(user_signature, "little"),
+        user_key_d,
+        n
+    ).to_bytes(256, "little")
+    decoy(user_signature)
+    r.recvuntil(b"secret ciphertext (b64): ")
+    cipher_text = r.recvline()[:-1]
+    print(unpad(cipher_decrypt.decrypt(base64.b64decode(cipher_text)), cipher_decrypt.block_size))
+    exit()
+
 
     #try:
     #    user_certificate = json.loads(user_certificate_data)
@@ -183,20 +260,12 @@ def main():
     #    print("Untrusted user certificate: invalid signature", file=sys.stderr)
     #    exit(1)
 
-    user_signa = (
-        name.encode().ljust(256, b"\0") +
-        A.to_bytes(256, "little") +
-        B.to_bytes(256, "little")
-    )
-    user_signa = SHA256Hash(user_signa).digest()
-    user_signa = pow(
-        int.from_bytes(user_signa, "little"),
-        dd,
-        nn
-    ).to_bytes(256, "little")
-    decoy(user_signa)
-
-    #user_signature_hash = SHA256Hash(user_signature_data).digest().encode()
+    #user_signature_data = (
+    #    name.encode().ljust(256, b"\0") +
+    #    A.to_bytes(256, "little") +
+    #    B.to_bytes(256, "little")
+    #)
+    #user_signature_hash = SHA256Hash(user_signature_data).digest()
     #user_signature_check = pow(
     #    int.from_bytes(user_signature, "little"),
     #    user_key["e"],
@@ -209,7 +278,6 @@ def main():
 
     #ciphertext = cipher_encrypt.encrypt(pad(flag, cipher_encrypt.block_size))
     #show_b64("secret ciphertext", ciphertext)
-    r.recvuntil(b"secret ciphertext (b64): ")
-    cipher = r.recvline()[:-1]
-    print(unpad(cipher_decrypt.decrypt(base64.b64decode(cipher)), cipher_decrypt.block_size))
-main()
+
+if __name__=="__main__":
+    main()
