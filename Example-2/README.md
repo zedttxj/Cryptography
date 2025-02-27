@@ -296,7 +296,7 @@ b'pwn.college{8-aCC_rKxTelwoMlnbQJlxe6BUW.dZDOzMDL5kTN5YzW}\n'
 
 One thing to notice: if the key value `s` get leaked, it can compromise the current communications. However, it won't affect the past communications. Luckily, the key value `s` is unique to each session. This only impacts the future communication where the same `s` is used.  
 HTTP Secure (HTTPS) is a modification of the HTTP protocol designed to utilize Transport Layer Security (TLS) or Secure Sockets Layer (SSL) with older applications for data security.  
-Before the TLS mechanism was in place, we were vulnerable to Man-in-the-middle attacks and other types of reconnaissance or hijacking, meaning anyone in the same LAN as the client or server could view the web traffic if they were listening on the wire. We can now have security implemented in the browser enabling everyone to encrypt their web habits, search requests, sessions or data transfers, bank transactions, and much more.
-TLS Handshake Via HTTPS
+Before the TLS mechanism was in place, we were vulnerable to Man-in-the-middle attacks and other types of reconnaissance or hijacking, meaning anyone in the same LAN as the client or server could view the web traffic if they were listening on the wire. We can now have security implemented in the browser enabling everyone to encrypt their web habits, search requests, sessions or data transfers, bank transactions, and much more.  
+TLS Handshake Via HTTPS:
 ![image](https://github.com/user-attachments/assets/4e6033c4-5816-4b82-a96f-7b35f1c7c5ca)
 
