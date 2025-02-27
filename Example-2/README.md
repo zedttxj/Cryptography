@@ -300,3 +300,17 @@ Before the TLS mechanism was in place, we were vulnerable to Man-in-the-middle a
 TLS Handshake Via HTTPS:
 ![image](https://github.com/user-attachments/assets/4e6033c4-5816-4b82-a96f-7b35f1c7c5ca)
 
+In the first few packets, we can see that the client establishes a session to the server using port 443 boxed in blue. This signals the server that it wishes to use HTTPS as the application communication protocol.
+
+Once a session is initiated via TCP, a TLS ClientHello is sent next to begin the TLS handshake. During the handshake, several parameters are agreed upon, including session identifier, peer x509 certificate, compression algorithm to be used, the cipher spec encryption algorithm, if the session is resumable, and a 48-byte master secret shared between the client and server to validate the session.
+
+Once the session is established, all data and methods will be sent through the TLS connection and appear as TLS Application Data as seen in the red box. TLS is still using TCP as its transport protocol, so we will still see acknowledgment packets from the stream coming over port 443.
+
+To summarize the handshake:
+
+- Client and server exchange hello messages to agree on connection parameters.
+- Client and server exchange necessary cryptographic parameters to establish a premaster secret.
+- Client and server will exchange x.509 certificates and cryptographic information allowing for authentication within the session.
+- Generate a master secret from the premaster secret and exchanged random values.
+- Client and server issue negotiated security parameters to the record layer portion of the TLS protocol.
+- Client and server verify that their peer has calculated the same security parameters and that the handshake occurred without tampering by an attacker.
