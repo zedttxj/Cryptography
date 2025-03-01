@@ -1,4 +1,4 @@
-# TLS 2 [pwn.college](https://pwn.college/cse365-f2024/cryptography/)
+# TLS 2 - [pwn.college](https://pwn.college/cse365-f2024/cryptography/)
 
 ## Challenge Overview
 
