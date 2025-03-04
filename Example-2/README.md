@@ -323,6 +323,7 @@ Before the TLS handshake: You, as the server, need to request and receive a cert
 5. Validity period (specifies the dates and times-a starting data and time and an expiration data and time-during which the certificate is valid)
 6. Subject’s name (contains the common name [CN] of the certificate as well as the distinguished name [DN] of the entity that owns the public key contained in the certificate)
 7. Subject’s public key (the meat of the certificate-the actual public key the certificate owner used to set up secure communications).  
+
 Certificates may be issued for a variety of purposes. These include providing assurance for the public keys of  
 - Computers/machines
 - Individual users
