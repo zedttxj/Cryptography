@@ -13,8 +13,8 @@ The main goal is to gain hands-on experience with encryption and decryption algo
 ## Cryptographic Algorithms Covered
 
 - **Encoding & Simple Ciphers**: XOR, Hex, Base64  
-- **Symmetric Encryption**: One-time Pad, Many-time Pad AES (ECB, CBC, CPA, POA)  
-- **Asymmetric Encryption**: Diffie-Hellman Key Exchange (DHKE → AES), RSA  
+- **Symmetric Encryption**: One-time Pad, Many-time Pad AES (ECB, CBC, CPA, POA), Diffie-Hellman Key Exchange (DHKE → AES)
+- **Asymmetric Encryption**: RSA  
 - **Hashing & Integrity**: SHA (various versions)
 
 ## Additional Topics
