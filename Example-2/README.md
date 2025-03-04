@@ -333,4 +333,4 @@ Certificates may be issued for a variety of purposes. These include providing as
 Some major CAs: Symantec, IdenTrust, AWS, GlobalSign, Comodo, Certum, GoDaddy, DigiCert, Secom, Entrust, Actalis, Trustwave.  
 If you configure your browser to trust a CA, it will automatically trust all of the digital certificates issued by that CA. Browser developers pre-configure browsers to trust the major CAs to avoid placing this burden on users. “Let’s Encrypt!” is a well-known CA because they offer free certficates in an effort to encourage the use of encryption.  
 Registration authorities (RAs) assist CAs with the burden of verifying users’ identities prior to issuing digital certificates.  
-CA must carefully protect their own private keys to preserve their trust relationships. They often use an offline CA to protect their root certificate, the top-level certificate for their entire PKI.
+CA must carefully protect their own private keys to preserve their trust relationships. They often use an **offline** CA to protect their **root certificate**, the top-level certificate for their entire PKI.
