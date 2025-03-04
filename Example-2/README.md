@@ -314,3 +314,21 @@ To summarize the handshake:
 - Generate a master secret from the premaster secret and exchanged random values.
 - Client and server issue negotiated security parameters to the record layer portion of the TLS protocol.
 - Client and server verify that their peer has calculated the same security parameters and that the handshake occurred without tampering by an attacker.
+
+Before the TLS handshake: You, as the server, need to request and receive a certificate from the CA by submitting a CSR. Digital certificates (signed by a trusted CA) that conform to X.509 contain the following data:
+1. Version of X.509 to which the certificate conforms.
+2. Serial number (from the certificate creator)
+3. Signature algorithm identifier (specifies the technique used by the certificate authority to digitally sign the contents of the certificate)
+4. Issuer name (identification of the certificate authority that issued the certificate)
+5. Validity period (specifies the dates and times-a starting data and time and an expiration data and time-during which the certificate is valid)
+6. Subject’s name (contains the common name [CN] of the certificate as well as the distinguished name [DN] of the entity that owns the public key contained in the certificate)
+7. Subject’s public key (the meat of the certificate-the actual public key the certificate owner used to set up secure communications).
+Certificates may be issued for a variety of purposes. These include providing assurance for the public keys of  
+- Computers/machines
+- Individual users
+- Email addresses
+- Developers (code-signing certificates).
+Some major CAs: Symantec, IdenTrust, AWS, GlobalSign, Comodo, Certum, GoDaddy, DigiCert, Secom, Entrust, Actalis, Trustwave.  
+If you configure your browser to trust a CA, it will automatically trust all of the digital certificates issued by that CA. Browser developers pre-configure browsers to trust the major CAs to avoid placing this burden on users. “Let’s Encrypt!” is a well-known CA because they offer free certficates in an effort to encourage the use of encryption.  
+Registration authorities (RAs) assist CAs with the burden of verifying users’ identities prior to issuing digital certificates.  
+CA must carefully protect their own private keys to preserve their trust relationships. They often use an offline CA to protect their root certificate, the top-level certificate for their entire PKI.
