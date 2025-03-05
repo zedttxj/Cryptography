@@ -200,7 +200,7 @@ This time, we received different output:
 b'B: user certificate (b64): user certificate signature (b64): user signature (b64): Untrusted user certificate: invalid signature\n'
 ```
 
-Let's find out the way the construct according to this section of code:
+Let's find out the way to construct according to this section of code:
 ```
     #user_signer = user_certificate.get("signer")
     #if user_signer not in root_trusted_certificates:
