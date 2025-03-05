@@ -43,7 +43,7 @@ r = process("/challenge/run")
     #show_hex("root key d", root_key.d)
     r.recvuntil(b"root key d: ")
     root_key_d = r.recvline()[:-1] # Cut off the last character, which is "\n"
-    root_key_d = int(root_key_d, 16) # Convert hex string into in
+    root_key_d = int(root_key_d, 16) # Convert hex string into integer
 
     #root_certificate = {
     #    "name": "root",
