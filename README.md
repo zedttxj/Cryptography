@@ -1,6 +1,55 @@
-# 🔐 Secure WebSocket Identity Protocol with Local CA
-This project is a self-contained Public Key Infrastructure (PKI) system built for real-time identity verification over WebSocket. It simulates a lightweight yet secure authentication mechanism suitable for peer-to-peer networks, relays, or service backbones.
+# Half-Onion PKI — Lightweight Auth over WebSocket
+A secure, scoped, and decentralized identity protocol inspired by the principles of onion routing — but halfway there. 🔐🧅
+## 🧅 Half-Onion PKI — Real-Time Auth over WebSocket
+Half-Onion PKI is a minimalist Public Key Infrastructure system built for lightweight WebSocket identity verification. Designed with speed and security in mind, it issues short-lived RSA certs scoped to ephemeral rooms, enabling real-time mutual authentication without centralized logins.
 
+## 🧠 Key Concepts
+- Local CA with RSA 2048 key signing
+
+- Room-bound identity: certs tied to roomId
+
+- Nonce-based handshake to prove key ownership
+
+- Optional manual cert approval or relay-triggered flow
+
+- Works as a decentralized WebSocket trust layer
+
+## 🚀 Why “Half-Onion”?
+Because it wraps identity in one cryptographic layer — not a full Tor node, but just enough for:
+
+- Peer-to-peer service mesh
+
+- Secure relays
+
+- Sandbox authentication for experimental backbones
+
+## 📁 Structure
+```
+/ca           # Certificate Authority logic
+/client       # Client cert requester + nonce responder
+/relay        # (Optional) room monitor and notifier
+/shared       # Key generation and cert verification utils
+/test         # Authenticated client-to-client demo
+```
+## 🔒 Security Features
+- RSA-2048 public/private keypair generation
+
+- SHA-256 signature signing/verification
+
+- Cert expiry enforcement (default: 30s)
+
+- Manual or semi-automatic room trust
+
+## 💡 Future Ideas
+- Mutual handshake (bi-directional nonce auth)
+
+- Encrypted messaging after trust
+
+- Time-limited room access via cert expiration
+
+- Relay federation with shared trust anchor
+
+>🧅 Because not everything needs a full onion.
 ## 🧩 Components
 - Local CA: Issues short-lived RSA certificates signed with SHA-256, optionally with manual approval
 
