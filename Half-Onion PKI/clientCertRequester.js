@@ -24,7 +24,7 @@ function verifyCert(cert, caPublicKeyPem) {
   return verifier.verify(caKey, certSignature, 'base64');
 }
 
-async function requestCertificateFromHub(hubUrl, clientId = "node-client-1", role = "render-peer") {
+async function requestCertificateFromHub(hubUrl = "ws://localhost:8888/hub", clientId = "node-client-1", role = "render-peer") {
   const roomId = Math.random().toString(36).substring(2, 10);
   const ws = new WebSocket(`${hubUrl}/${roomId}`);
 
@@ -72,67 +72,149 @@ async function requestCertificateFromHub(hubUrl, clientId = "node-client-1", rol
   });
 }
 
-async function runAuthenticatedClient(hubUrl = "ws://localhost:8888/hub") {
-  try {
-    const { certificate, privateKey, caPublicKey, roomId } = await requestCertificateFromHub(hubUrl);
+async function runAuthenticatedClient(hubUrl = "ws://localhost:8888/hub", certificate, privateKey, caPublicKey, roomId) {
+  return new Promise((resolve, reject) => {
+    try {
 
-    console.log("✅ Certificates issued and verified");
+      console.log("✅ Certificates issued and verified");
 
-    ws = new WebSocket(`${hubUrl}/${roomId}`);
-    const clientId = Math.random().toString(36).substring(2, 10);
+      ws = new WebSocket(`${hubUrl}/${roomId}`);
+      const clientId = Math.random().toString(36).substring(2, 10);
 
-    ws.on("open", () => {
-        console.log("[ws] Connected");
-        ws.send(JSON.stringify({ type: "hello", clientId })); // probably make clientId random
-    });
+      ws.on("open", () => {
+          console.log("[ws] Connected");
+          ws.send(JSON.stringify({ type: "hello", clientId })); // probably make clientId random
+      });
 
-    ws.on("message", (data) => {
-        const msg = JSON.parse(data);
-        if (msg.type === "hello" && msg.peerlength === 2) {
-            nonceFrom1 = crypto.randomBytes(32).toString('hex');
-            console.log("[ws] Sending nonce:", nonceFrom1);
-            ws.send(JSON.stringify({
-                type: "nonce-challenge",
-                nonce: nonceFrom1,
-                cert: certificate
-            }));
-        }
+      ws.on("message", (data) => {
+          const msg = JSON.parse(data);
+          if (msg.type === "hello" && msg.peerlength === 2) {
+              nonceFrom1 = crypto.randomBytes(32).toString('hex');
+              console.log("[ws] Sending nonce:", nonceFrom1);
+              ws.send(JSON.stringify({
+                  type: "nonce-challenge",
+                  nonce: nonceFrom1,
+                  cert: certificate
+              }));
+          }
 
-        if (msg.type === "nonce-response" && msg.peerlength === 2) {
-            const { signedNonce, cert } = msg;
-            const isTrusted = verifyCert(cert, caPublicKey);
-            if (!isTrusted) return console.log("❌ Untrusted cert");
+          if (msg.type === "nonce-response" && msg.peerlength === 2) {
+              const { signedNonce, cert } = msg;
+              const isTrusted = verifyCert(cert, caPublicKey);
+              if (!isTrusted) return console.log("❌ Untrusted cert");
 
-            const verifier = crypto.createVerify('sha256');
-            verifier.update(nonceFrom1);
-            verifier.end();
+              const verifier = crypto.createVerify('sha256');
+              verifier.update(nonceFrom1);
+              verifier.end();
 
-            const valid = verifier.verify(cert.publicKey, signedNonce, 'base64');
-            console.log(valid ? "✅ ws authenticated" : "❌ Invalid signature from ws");
-            ws.close();
-        }
-        if (msg.type === "nonce-challenge" && msg.peerlength === 2) {
-            const signer = crypto.createSign('sha256');
-            signer.update(msg.nonce);
-            signer.end();
-            const signedNonce = signer.sign(privateKey, 'base64');
+              const valid = verifier.verify(cert.publicKey, signedNonce, 'base64');
+              console.log(valid ? "✅ ws authenticated" : "❌ Invalid signature from ws");
+              ws.close();
+              if (valid) {
+                resolve({ clientPubKey: cert.publicKey });
+              } else {
+                reject(new Error("Invalid signature"));
+              }
+          }
+          if (msg.type === "nonce-challenge" && msg.peerlength === 2) {
+              const signer = crypto.createSign('sha256');
+              signer.update(msg.nonce);
+              signer.end();
+              const signedNonce = signer.sign(privateKey, 'base64');
 
-            ws.send(JSON.stringify({
+              ws.send(JSON.stringify({
+                  type: "nonce-response",
+                  signedNonce,
+                  cert: certificate
+              }), () => {
+                ws.close();
+                resolve({});
+              });
+          }
+      });
+    } catch (err) {
+      console.error("❌ Error:", err.message);
+    }
+  })
+};
+
+async function runAuthenticatedClient2Ways(hubUrl = "ws://localhost:8888/hub", certificate, privateKey, caPublicKey, roomId) {
+  return new Promise((resolve, reject) => {
+    try {
+
+      let clientPubKey;
+
+      console.log("✅ Certificates issued and verified");
+
+      ws = new WebSocket(`${hubUrl}/${roomId}`);
+      const clientId = Math.random().toString(36).substring(2, 10);
+
+      ws.on("open", () => {
+          console.log("[ws] Connected");
+          ws.send(JSON.stringify({ type: "hello", clientId })); // probably make clientId random
+      });
+
+      ws.on("message", (data) => {
+          const msg = JSON.parse(data);
+          if (msg.type === "hello" && msg.peerlength === 2) {
+              nonceFrom1 = crypto.randomBytes(32).toString('hex');
+              console.log("[ws] Sending nonce:", nonceFrom1);
+              ws.send(JSON.stringify({
+                  type: "nonce-challenge",
+                  nonce: nonceFrom1,
+                  cert: certificate
+              }));
+          }
+
+          if (msg.type === "nonce-response" && msg.peerlength === 2) {
+              const { signedNonce, cert } = msg;
+              const isTrusted = verifyCert(cert, caPublicKey);
+              if (!isTrusted) return console.log("❌ Untrusted cert");
+
+              const verifier = crypto.createVerify('sha256');
+              verifier.update(nonceFrom1);
+              verifier.end();
+
+              const valid = verifier.verify(cert.publicKey, signedNonce, 'base64');
+              console.log(valid ? "✅ ws authenticated" : "❌ Invalid signature from ws");
+              if (valid) {
+                clientPubKey = cert.publicKey;
+              } else {
+                reject(new Error("Invalid signature"));
+              }
+          }
+          if (msg.type === "nonce-challenge" && msg.peerlength < 3) {
+              const signer = crypto.createSign('sha256');
+              signer.update(msg.nonce);
+              signer.end();
+              const signedNonce = signer.sign(privateKey, 'base64');
+
+              ws.send(JSON.stringify({
                 type: "nonce-response",
                 signedNonce,
                 cert: certificate
-            }));
-
-            ws.close();
-        }
-    });
-    
-    return { certificate, privateKey };
-
-  } catch (err) {
-    console.error("❌ Error:", err.message);
-  }
-
+              }), () => {
+                // Instead of closing, it send the challenge back:
+                nonceFrom1 = crypto.randomBytes(32).toString('hex');
+                console.log("[ws] Sending nonce:", nonceFrom1);
+                ws.send(JSON.stringify({
+                  type: "nonce-challenge",
+                  nonce: nonceFrom1,
+                  cert: certificate
+                }), () => {
+                  // ✅ Only now close
+                  if (clientPubKey) {
+                    ws.close();
+                    resolve({clientPubKey});
+                  }
+                });
+              });
+          }
+      });
+    } catch (err) {
+      console.error("❌ Error:", err.message);
+    }
+  })
 };
 
-module.exports = { runAuthenticatedClient };
+module.exports = { runAuthenticatedClient, runAuthenticatedClient2Ways, requestCertificateFromHub };
