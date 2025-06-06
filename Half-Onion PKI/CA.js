@@ -120,5 +120,5 @@ function signingCert(room) {
   });
 }
 
-signingCert("2sbe13ph");
-signingCert("9vzsm4j2");
+signingCert("2sbe13ph"); // Must adjust as you sign
+signingCert("9vzsm4j2"); // Must adjust as you sign
